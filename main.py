@@ -41,14 +41,9 @@ class TileCalculator:
         )
 
     def _get_item_bound(self):
-        # Сдвиг по углу пытаюсь сделать здесь. В дальнейшем эти значения отнимаются
-        # либо складываются с точками соответственно. Возможно тут уже логически
-        # не понятно почему + или -, т.к. я под конец пытался методом подбора это делать.
-        shift_x = self.tile_length * math.cos(self.angle)
-        shift_y = self.tile_width * math.sin(self.angle)
-        # # Чтобы построить нормально но без учёта угла
-        # shift_x = 0
-        # shift_y = 0
+        sin_angle = math.sin(math.radians(self.angle))
+        shift_x = self.tile_length * sin_angle
+        shift_y = self.tile_width * sin_angle
 
         self.point_1 = self.point_4  # Первая точка плитки всегда совпадает с последней точкой предыдущей плитки
         # То, что далее находится в скобках, например (self.point_1["x"] + self.tile_length)
@@ -56,30 +51,30 @@ class TileCalculator:
         if self.right:
             # Построение правой плитки
             self.point_2 = {
-                "x": (self.point_1["x"] + self.tile_length) + shift_x,
-                "y": self.point_1["y"] + shift_y
+                "x": (self.point_1["x"] + self.tile_length) - shift_x,
+                "y": self.point_1["y"] + shift_x
             }
             self.point_3 = {
-                "x": self.point_2["x"] - shift_x,
-                "y": (self.point_2["y"] + self.tile_width) + shift_y
+                "x": self.point_2["x"] - shift_y,
+                "y": (self.point_2["y"] + self.tile_width) - shift_y
             }
             self.point_4 = {
-                "x": (self.point_3["x"] - self.tile_length) - shift_x,
-                "y": self.point_3["y"] - shift_y
+                "x": (self.point_3["x"] - self.tile_length) + shift_x,
+                "y": self.point_3["y"] - shift_x
             }
         else:
             # Построение левой плитки
             self.point_2 = {
                 "x": self.point_1["x"] - shift_x,
-                "y": (self.point_1["y"] + self.tile_length) + shift_y
+                "y": (self.point_1["y"] + self.tile_length) - shift_x
             }
             self.point_3 = {
-                "x": (self.point_2["x"] + self.tile_width) + shift_x,
+                "x": (self.point_2["x"] + self.tile_width) - shift_y,
                 "y": self.point_2["y"] + shift_y
             }
             self.point_4 = {
                 "x": self.point_3["x"] + shift_x,
-                "y": (self.point_3["y"] - self.tile_length) - shift_y
+                "y": (self.point_3["y"] - self.tile_length) + shift_x
             }
 
         self.right = not self.right  # Меняем направление
@@ -87,6 +82,7 @@ class TileCalculator:
         if self.point_1["y"] >= self.room_width:
             # Если нижняя часть плитки касается
             # или выходит за верхнюю стену комнаты, то сдвигаем ось укладки
+            self.right = True
             self._shift_axle()
         if self.start_tiling["x"] > self.room_length:
             # Останавливаем, если ось укладки выходит за правую стену комнаты
@@ -104,7 +100,8 @@ class TileCalculator:
                 self.point_1["y"],
                 self.point_2["y"],
                 self.point_3["y"],
-                self.point_4["y"]],
+                self.point_4["y"]
+            ],
         )
         ################
 
@@ -112,8 +109,8 @@ class TileCalculator:
 
     def get_items(self):
         self._create_a_room()
-        # Цикл, в котором строим только 19 плиток
-        for i in range(20):
+        # Цикл, в котором строим только несколько плиток
+        for i in range(200):
             item = self._get_item_bound()
             print(item)
             if not item:
@@ -131,10 +128,10 @@ class TileCalculator:
 
 if __name__ == '__main__':
     # Входящие данные
-    ROOM = (1000, 1000)  # x(room_length), y(room_width)
+    ROOM = (600, 600)  # x(room_length), y(room_width)
     TILE = (200, 40)  # Плитка
     START_TILING = (0, 0)  # Начало оси укладки
-    ANGLE = 45  # Угол поворота оси укладки
+    ANGLE = 30  # Угол поворота оси укладки. Пока оси сдвигаются корректно при 0 и 30 градусах
 
     session_calculate = TileCalculator(ROOM, TILE, START_TILING, ANGLE)
     session_calculate.get_items()
