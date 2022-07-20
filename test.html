@@ -1,0 +1,410 @@
+<html>
+<head>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="wn-calc"></div>
+    <div class="calc-container">
+        <div class="calc-content">
+            <div class="cl-line clearfix">
+                <div class="cl-name">Длина комнаты:</div>
+                <div class="cl-value unit-input">
+                    <input type="number" min="100" max="5000" id="inputCalcRoomLength" placeholder="Длина комнаты" /><span class="unit">Сантиметры</span>
+                </div>
+            </div>
+            <div class="cl-line clearfix">
+                <div class="cl-name">Ширина комнаты:</div>
+                <div class="cl-value unit-input">
+                    <input type="number" min="100" max="5000" id="inputCalcRoomWidth" placeholder="Ширина комнаты" /><span class="unit">Сантиметры</span>
+                </div>
+            </div>
+            <div class="cl-line clearfix">
+                <div class="cl-name">Длина плашки:</div>
+                <div class="cl-value  unit-input">
+                  <input type="text" class="calc-input" id="ln_lam_id" value="615" disabled=""><span class="unit">Миллиметры</span>
+                </div>
+            </div>
+            <div class="cl-line clearfix unit-input">
+                <div class="cl-name">Ширина плашки:</div>
+                <div class="cl-value sel-wd-div unit-input">
+                  <input type="text" class="calc-input" id="wd_lam_id" value="123" disabled=""><span class="unit">Миллиметры</span>
+                </div>
+            </div>
+
+            <div class="cl-line clearfix">
+                <div class="cl-name">Отступ от стен:</div>
+                <div class="cl-value sel-wd-div unit-input">
+                    <input type="number" min="0" max="200" id="inputCalcIndentatWalls" placeholder="Отступ от стен" /><span class="unit">Сантиметры</span>
+                </div>
+            </div>
+            <div class="cl-line clearfix">
+                <div class="cl-name">Число плашек в упаковке:</div>
+                <div class="cl-value unit-input">
+                  <input type="text" class="calc-input" id="n_packing" value="18" disabled=""><span class="unit">Шт.</span>
+                </div>
+            </div>
+            <div class="cl-line clearfix">
+            <div class="cl-name">Направление укладки ламината:</div>
+                <div class="cl-value unit-input">
+                <select class="calc-sel sel-wd" id="inputCalcAngle">
+                    <option selected value="0">Укладка по длине 0°</option>
+                    <option value="45">Укладка по диагонали 45</option>
+                    <option value="90">Укладка по ширине 90°</option>
+                </select>
+                </div>
+            </div>
+
+            <div class="calc-btn-div">
+                <span class="btn-lg btn btn-default transition_bg has-ripple" id="btnCalcGetResult">Рассчитать</span>
+            </div>
+
+<!--             <div id="btnCalcGetResult">Рассчитать</div> -->
+        </div>
+
+        <div id="calcResultBlock">
+
+        </div>
+    </div>
+
+    <script type="text/javascript">
+
+        class layingСalculator {
+
+            defaultRoomLength = 1000;
+            defaultRoomWidth = 1000;
+            defaultIndentatWalls = 8;
+            defaultAngle =  0;
+            params = {
+                room: {length: this.defaultRoomLength, width: this.defaultRoomWidth,},
+                tile: {length : 615/10, width: 123/10,},   //Не забыть поделить на 10
+                angle: this.defaultAngle,
+                indentatWalls: this.defaultIndentatWalls,
+            };
+            InputRoomLength;
+            InputRoomWidth;
+            inputIndentatWalls;
+            inputAngle;
+
+            errorMessage;
+            items = [];
+
+            resultBlock;
+            startTiling;
+
+            /**
+             * Конструктор класса
+             */
+            constructor() {
+
+                // 1. вешаем обработчики кнопки
+
+                let btnGetResult = document.getElementById("btnCalcGetResult");
+                btnGetResult.addEventListener( "click" , () => this.handle());
+
+                this.resultBlock = document.getElementById("calcResultBlock");
+
+                // 2. полей - при изменении оставляем только число (возможно точку)
+                this.InputRoomLength = document.getElementById("inputCalcRoomLength");
+                this.InputRoomLength.addEventListener( "keyup" , () => this.handleInputRoomLength());
+
+                this.InputRoomWidth = document.getElementById("inputCalcRoomWidth");
+                this.InputRoomWidth.addEventListener( "keyup" , () => this.handleInputRoomWidth());
+
+                this.inputIndentatWalls = document.getElementById("inputCalcIndentatWalls");
+                this.inputIndentatWalls.addEventListener( "keyup" , () => this.handleinputIndentatWalls());
+
+                this.inputAngle = document.getElementById("inputCalcAngle");
+                this.inputAngle.addEventListener( "change" , () => this.handleInputAngle());
+
+                // 3. ставим значения инпутов по умолчанию
+                this.resultBlock.innerHTML = '';
+                this.InputRoomLength.value = this.defaultRoomLength;
+                this.InputRoomWidth.value = this.defaultRoomWidth;
+                this.inputIndentatWalls.value = this.defaultIndentatWalls;
+                this.inputAngle.value = this.defaultAngle;
+
+                // 4. определяем начальную точку укладки
+                this.startTiling = this.changeStartTiling(this.defaultAngle);
+            }
+
+            /**
+             *  Получаем параметры с формы
+             */
+            getParams() {
+                this.params.room = {
+                    length : this.InputRoomLength.value,
+                    width: this.InputRoomWidth.value,
+                };
+                this.params.angle = Number(this.inputAngle.value) - 45;
+                this.params.indentatWalls = Number(this.inputIndentatWalls.value);
+            }
+
+            checkParams() {
+                if(this.params.room.length < 100) {
+                    this.errorMessage = 'Слишком маленькая комната';
+                    return false;
+                };
+                if(this.params.room.width < 100) {
+                    this.errorMessage = 'Слишком маленькая комната';
+                    return false;
+                };
+                if(this.params.room.length * this.params.room.width > 2000000) {
+                    this.errorMessage = 'Слишком большая комната';
+                    return false;
+                };
+                return true;
+            }
+
+            /**
+             *  Обрабатываем изменение инпута длины комнаты
+             */
+            handleInputRoomLength() {
+                this.InputRoomLength.value =  this.InputRoomLength.value.replace(/[^\d.]/ig, '');
+            }
+
+            handleInputRoomWidth() {
+                this.InputRoomWidth.value =  this.InputRoomWidth.value.replace(/[^\d.]/ig, '');
+            }
+
+            handleinputIndentatWalls() {
+                this.inputIndentatWalls.value =  this.inputIndentatWalls.value.replace(/[^\d.]/ig, '');
+            }
+
+            handleInputAngle() {
+                this.inputAngle.value =  this.inputAngle.value.replace(/[^\d.]/ig, '');
+                this.startTiling = this.changeStartTiling(this.inputAngle.value);
+            }
+
+            subtractIndentatWalls() {
+                this.params.room.length -=  this.params.indentatWalls*2;
+                this.params.room.width -=  this.params.indentatWalls*2;
+            }
+
+            changeStartTiling(angle) {
+                if (angle < 45) {
+                    let indent = ((2 ** 0.5) * this.params.tile.length) / 2;
+                    return {x: -indent, y: 0};
+                } else if (angle >= 45 && angle < 90) {
+                    return {x: 0, y: 0};
+                } else if (angle >= 90) {
+                    let indent = ((2 ** 0.5) * this.params.tile.length) * 3;
+                    return {x: 0, y: -indent};
+                };
+            }
+
+            shift_axle(changeDirection) {
+                let h = ((2 ** 0.5) * this.params.tile.length);
+                if (this.params.angle === 45 || changeDirection) {h=-h};
+                this.startTiling = {
+                    x: this.startTiling.x - h * Math.cos((this.params.angle - 45) * Math.PI/180),
+                    y: this.startTiling.y - h * Math.sin((this.params.angle - 45) * Math.PI/180)
+                };
+            }
+
+            /**
+             *  Определяет целая ли плитка
+             */
+            get_whole_tile(item){
+                if (item[0]["y"] > this.params.room.length || item[1]["y"] > this.params.room.length || item[2]["y"] > this.params.room.length || item[3]["y"] > this.params.room.length) {
+                    return;
+                };
+                if (item[0]["x"] > this.params.room.width || item[1]["x"] > this.params.room.width || item[2]["x"] > this.params.room.width || item[3]["x"] > this.params.room.width) {
+                    return;
+                };
+                if (item[0]["x"] < 0 || item[1]["x"] < 0 || item[2]["x"] < 0 || item[3]["x"] < 0) {
+                    return;
+                };
+                if (item[0]["y"] < 0 || item[1]["y"] < 0 || item[2]["y"] < 0 || item[3]["y"] < 0) {
+                    return;
+                };
+
+                return true;
+            }
+
+
+            /**
+             *  Исключаем плитки выходящие за пределы
+             */
+            remove_redundant_items(item) {
+                if (item[0]["y"] > this.params.room.length && item[1]["y"] > this.params.room.length && item[2]["y"] > this.params.room.length && item[3]["y"] > this.params.room.length) {
+                    return
+                };
+                if (item[0]["x"] > this.params.room.width && item[1]["x"] > this.params.room.width && item[2]["x"] > this.params.room.width && item[3]["x"] > this.params.room.width) {
+                    return
+                };
+                if (item[0]["y"] < 0 && item[1]["y"] < 0 && item[2]["y"] < 0 && item[3]["y"] < 0) {
+                    return
+                };
+                if (item[0]["x"] < 0 && item[1]["x"] < 0 && item[2]["x"] < 0 && item[3]["x"] < 0) {
+                    return
+                };
+
+                return true;
+            }
+
+            /**
+             *  Получить одну плитку
+             */
+            get_item_bound(x, y, angle, right, tile_length, tile_width){
+                var point_1 = {"x": x, "y": y};
+                var point_2;
+                var point_3;
+                var point_4;
+                var direction;
+                var whole = {"whole": false};
+                if (right) {
+                    point_2 = {
+                        "x": x + tile_length * Math.cos(angle * Math.PI/180),
+                        "y": y + tile_length * Math.sin(angle * Math.PI/180)
+                    };
+
+                    let r = (tile_length ** 2 + tile_width ** 2) ** 0.5;
+                    let u = (angle + Math.atan(tile_width / tile_length) / (Math.PI/180)) * Math.PI/180;
+
+                    point_3 = {
+                        "x": x + r * Math.cos(u),
+                        "y": y + r * Math.sin(u)
+                    };
+                    point_4 = {
+                        "x": x + tile_width * Math.cos((angle + 90) * (Math.PI/180)),
+                        "y": y + tile_width * Math.sin((angle + 90) * (Math.PI/180))
+                    };
+                    direction = {"right": true};
+                } else {
+                    point_2 = {
+                        "x": x + tile_length * Math.cos((angle + 90) * Math.PI/180),
+                        "y": y + tile_length * Math.sin((angle + 90) * Math.PI/180)
+                    };
+
+                    point_3 = {
+                        "x": x + (tile_length ** 2 + tile_width ** 2) ** 0.5 * Math.cos(
+                            (angle + (90 - Math.atan(tile_width / tile_length) / (Math.PI/180))) * Math.PI/180),
+                        "y": y + (tile_length ** 2 + tile_width ** 2) ** 0.5 * Math.sin(
+                            (angle + (90 - Math.atan(tile_width / tile_length) / (Math.PI/180))) * Math.PI/180)
+                    };
+                    point_4 = {
+                        "x": x + tile_width * Math.cos(angle * (Math.PI/180)),
+                        "y": y + tile_width * Math.sin(angle * (Math.PI/180))
+                    };
+                    direction = {"right": false};
+                }
+
+                return [point_1, point_2, point_3, point_4, direction, whole];
+            };
+
+
+            continueLaying(x, y) {
+                if (y - this.params.room.length > this.params.room.length || x - this.params.room.width > this.params.room.width) {
+                    return;
+                };
+                return true;
+            }
+
+            /**
+             *  поулчаем массив всех эелментов
+             */
+            getItems() {
+                var result = document.getElementById("room_svg");
+                var items = [];
+                var right = true;
+                var x = this.startTiling.x;
+                var y = this.startTiling.y;
+                var angle = this.params.angle;
+                var tileLength = this.params.tile.length;
+                var tileWidth = this.params.tile.width;
+                var changeDirection = false;
+                while (true) {
+                    var item = this.get_item_bound(x, y, angle, right, tileLength, tileWidth)
+                    right = !right;
+                    x = item[3]["x"];
+                    y = item[3]["y"];
+                    if ((item[0]["x"] - this.params.tile.length) > this.params.room.width || item[0]["y"] - this.params.tile.length > this.params.room.length) {
+                        right = true;
+                        this.shift_axle(changeDirection);
+                        x = this.startTiling.x;
+                        y = this.startTiling.y;
+                        if (!this.continueLaying(x, y) && !changeDirection && this.params.angle === 0) {
+                            this.startTiling = this.changeStartTiling(angle + 45);
+                            changeDirection = true;
+                        };
+                        if (!this.continueLaying(x, y) && !changeDirection) {
+                            break;
+                        };
+                        if (!this.continueLaying(x, y) && changeDirection && y < 0){
+                            break;
+                        }
+                    };
+
+                    if (!this.remove_redundant_items(item)) {
+                        continue;
+                    };
+
+                    if (this.get_whole_tile(item)) {
+                        item[5] = {"whole": true};
+                    }
+
+                    this.items.push(item);
+                };
+            }
+
+            /**
+             *  отображаем массив
+             */
+            render() {
+                let widthRoom = Number(this.params.room.width);
+                let lengthRoom = Number(this.params.room.length);
+                let indentatWalls = Number(this.params.indentatWalls);
+                
+                let htmlSvg = `<svg id="room_svg" width="100%" height="100%"  xmlns="http://www.w3.org/2000/svg" viewBox="${widthRoom/-5} ${lengthRoom/-5 } ${widthRoom*1.4 } ${lengthRoom*1.4}">`;
+                
+                let htmlSvgRect = `<rect width="${widthRoom}" height="${lengthRoom}" fill="#999"/>\
+                    <rect x="${-indentatWalls}" y="${-indentatWalls}" width="${widthRoom + indentatWalls*2}" height="${lengthRoom + indentatWalls*2}" stroke="black" fill="none"/>`;
+                
+                this.items.forEach(function(item, i, arr) {
+                    let whole = '';
+                    if (item[5]['whole']) {
+                        whole = 'whole';
+                    };
+                    htmlSvgRect += `<polyline points="\
+                        ${item[0]['x']},${item[0]['y']}\
+                        ${item[1]['x']},${item[1]['y']}\
+                        ${item[2]['x']},${item[2]['y']}\
+                        ${item[3]['x']},${item[3]['y']}"\
+                        class="${whole}" stroke="black" />`;
+                });
+
+                let countItems = this.items.length;
+                let blockItems = `<div class="calc-result" style="display: block;">\
+                    <div style="text-align:center; font-size:16px;">Требуемое количество плашек ламината: ${countItems}</div>\
+                    </div>`;
+
+                this.resultBlock.innerHTML = htmlSvg + htmlSvgRect + '</svg>' + blockItems;
+            }
+
+
+            /**
+             *  Основной обработчик
+             */
+            handle() {
+                this.getParams();
+                this.subtractIndentatWalls();
+
+                if(!this.checkParams()) {
+                    return alert(this.errorMessage); // @todo сделать красиво
+                }
+                this.items = [];
+
+                this.getItems();
+                this.startTiling = this.changeStartTiling(this.params.angle + 45);
+
+                this.render();
+            }
+
+        }
+
+        let myLayingСalculator = new layingСalculator();
+
+    </script>
+
+</body>
+</html>

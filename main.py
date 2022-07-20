@@ -15,13 +15,15 @@ class TileCalculator:
                 shift_x = 0
             if start_tiling[1] < 0:
                 shift_y = 0
-            self.start_tiling = {'x': -self.room_length + shift_x, 'y': self.room_width + shift_y}
+            indent = ((2 ** 0.5) * self.tile_length) / 2
+            self.start_tiling = {'x': -indent + shift_x, 'y': self.room_width + shift_y}
         elif angle >= 45 and angle < 90:
             if start_tiling[0] > self.tile_length:
                 shift_x = 0
             if start_tiling[1] < 0 or start_tiling[1] > self.room_width:
                 shift_y = 0
-            self.start_tiling = {'x': -self.room_length + shift_x - self.room_width, 'y': 0 + shift_y}
+            length_multiple_of_tile_length = (self.room_length + self.room_width) - (self.room_length + self.room_width) % self.tile_length
+            self.start_tiling = {'x': -length_multiple_of_tile_length + shift_x, 'y': 0 + shift_y}
         elif angle >= 90:
             if start_tiling[0] > self.tile_length:
                 shift_x = 0
@@ -185,9 +187,9 @@ class TileCalculator:
 
 
 if __name__ == '__main__':
-    ROOM = (600, 820)  # x(room_length), y(room_width)
-    TILE = (200, 40)  # Плитка
-    START_TILING = (-100, 0)  # Начало оси укладки
+    ROOM = (900, 900)  # x(room_length), y(room_width)
+    TILE = (200, 60)  # Плитка
+    START_TILING = (0, 0)  # Начало оси укладки
     ANGLE = 45  # Угол поворота оси укладки. Пока оси сдвигаются корректно при 0 и 30 градусах
 
     session_calculate = TileCalculator(ROOM, TILE, START_TILING, ANGLE)
@@ -195,7 +197,8 @@ if __name__ == '__main__':
     print(len(items))
     session_calculate.show_tiles(items, '#DCE1F5')
     items_in_the_toom = session_calculate.get_the_tiles_included_in_the_room(items)
-    print(items_in_the_toom)
-    print(len(items_in_the_toom))
+    print(items)
+    # print(items_in_the_toom)
+    # print(len(items_in_the_toom))
     session_calculate.show_tiles(items_in_the_toom,  'green')
     plt.show()  # Показать окно
