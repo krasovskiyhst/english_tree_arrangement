@@ -61,7 +61,7 @@
 <!--             <div id="btnCalcGetResult">Рассчитать</div> -->
         </div>
 
-        <div id="calcResultBlock">
+        <div class="draggable" id="calcResultBlock">
 
         </div>
     </div>
@@ -70,8 +70,8 @@
 
         class layingСalculator {
 
-            defaultRoomLength = 1000;
-            defaultRoomWidth = 1000;
+            defaultRoomLength = 300;
+            defaultRoomWidth = 400;
             defaultIndentatWalls = 8;
             defaultAngle =  0;
             params = {
@@ -90,6 +90,8 @@
 
             resultBlock;
             startTiling;
+            downX;
+            downY;
 
             /**
              * Конструктор класса
@@ -101,7 +103,11 @@
                 let btnGetResult = document.getElementById("btnCalcGetResult");
                 btnGetResult.addEventListener( "click" , () => this.handle());
 
+                // let drag = document.getElementById("draggable");
+                // drag.addEventListener('mousemove', (e) => this.dragAndDrop(e));
+
                 this.resultBlock = document.getElementById("calcResultBlock");
+                this.resultBlock.addEventListener('mousemove', (e) => this.dragAndDrop(e));
 
                 // 2. полей - при изменении оставляем только число (возможно точку)
                 this.InputRoomLength = document.getElementById("inputCalcRoomLength");
@@ -187,8 +193,9 @@
                 } else if (angle >= 45 && angle < 90) {
                     return {x: 0, y: 0};
                 } else if (angle >= 90) {
-                    let indent = ((2 ** 0.5) * this.params.tile.length) * 3;
-                    return {x: 0, y: -indent};
+                    let indent_y = ((2 ** 0.5) * this.params.tile.length) * 3;
+                    let indent_x =  ((2 ** 0.5) * this.params.tile.width) / 2;
+                    return {x: indent_x, y: -indent_y};
                 };
             }
 
@@ -223,68 +230,205 @@
 
 
             /**
-             *  Исключаем плитки выходящие за пределы
+             *  Исключает плитки выходящие за пределы
              */
             remove_redundant_items(item) {
-                if (item[0]["y"] > this.params.room.length && item[1]["y"] > this.params.room.length && item[2]["y"] > this.params.room.length && item[3]["y"] > this.params.room.length) {
+
+                if (item[0]["y"] >= this.params.room.length && item[1]["y"] >= this.params.room.length && item[2]["y"] >= this.params.room.length && item[3]["y"] >= this.params.room.length) {
                     return
                 };
-                if (item[0]["x"] > this.params.room.width && item[1]["x"] > this.params.room.width && item[2]["x"] > this.params.room.width && item[3]["x"] > this.params.room.width) {
+                if (item[0]["x"] >= this.params.room.width && item[1]["x"] >= this.params.room.width && item[2]["x"] >= this.params.room.width && item[3]["x"] >= this.params.room.width) {
                     return
                 };
-                if (item[0]["y"] < 0 && item[1]["y"] < 0 && item[2]["y"] < 0 && item[3]["y"] < 0) {
+                if (item[0]["y"] <= 0 && item[1]["y"] <= 0 && item[2]["y"] <= 0 && item[3]["y"] <= 0) {
                     return
                 };
-                if (item[0]["x"] < 0 && item[1]["x"] < 0 && item[2]["x"] < 0 && item[3]["x"] < 0) {
+                if (item[0]["x"] <= 0 && item[1]["x"] <= 0 && item[2]["x"] <= 0 && item[3]["x"] <= 0) {
                     return
                 };
 
-                return true;
+
+                let sides_of_the_room = [
+                    {X1: 0, Y1: 0, X2: this.params.room.width, Y2: 0},
+                    {X1: this.params.room.width, Y1: 0, X2: this.params.room.width, Y2: this.params.room.length},
+                    {X1: this.params.room.width, Y1: this.params.room.length, X2: 0, Y2: this.params.room.length},
+                    {X1: 0, Y1: this.params.room.length, X2: 0, Y2: 0},
+                ]
+
+                let sides_tile = 4;
+
+
+
+                var index, len;
+                for (index = 0, len = sides_of_the_room.length; index < len; ++index){
+
+
+
+
+                    let side_room = sides_of_the_room[index]
+                    let r1 = {X: side_room.X1, Y: side_room.Y1};
+                    let r2 = {X: side_room.X2, Y: side_room.Y2};
+                    for (let i_tile = 0; i_tile < 4; i_tile++) {
+                        let increase = 1;
+                        if (i_tile===3) {increase = -3};
+                        let p1 = {X: item[i_tile]["x"], Y: item[i_tile]["y"]};
+                        let p2 = {X: item[i_tile+increase]["x"], Y: item[i_tile+increase]["y"]};
+                        let imaginaryPoints = this._get_the_point_of_intersection(r1, r2, p1, p2);
+
+                        
+                        console.log("index="+index+",tile="+i_tile);
+                        console.log(p1,p2,r1,r2);
+                        console.dir(imaginaryPoints);
+
+                        if (
+                            (imaginaryPoints.x<=this.params.room.width && imaginaryPoints.x>=0) && 
+                            (imaginaryPoints.x>=item[i_tile]["x"] && imaginaryPoints.x<=item[i_tile+increase]["x"])
+                            ) {
+                            return true;
+                        };
+                        if ((imaginaryPoints.y<=this.params.room.length && imaginaryPoints.y>=0) &&
+                            (imaginaryPoints.y>=item[i_tile]["y"] && imaginaryPoints.y<=item[i_tile+increase]["y"])
+
+                            )  {
+                            return true;
+                        };
+                        // if (imaginaryPoints.y>=item[i_tile]["y"] || imaginaryPoints.y<=item[i_tile+increase]["y"]) {
+                        //     return true;
+                        // };
+
+
+                        /*if (imaginaryPoints.x>this.params.room.width || imaginaryPoints.x<0) {
+
+                            return;
+                        };
+                        if (imaginaryPoints.y>this.params.room.length || imaginaryPoints.y<0) {
+                            console.log('x', imaginaryPoints.x);
+                            console.log('y', imaginaryPoints.y);
+                            return;
+                        };*/
+                    }
+                }
+
+
+                return;
+
+                /*if (sides_tile===0) {
+                    console.log(sides_tile)
+                    return;
+                }
+
+                return true;*/
             }
+
+            
+            get_the_point_of_intersection(tX1, tY1, tX2, tY2, v2, w2, vw) {
+
+                let v = tX2 - tX1;
+                let w = tY2 - tY1;
+
+                let t2 = (-w * this.params.room.width + w * tX1 + v * vw - v * tY1) / (w * v2 - v * w2);
+                let t = (this.params.room.width - tX1 + v2 * t2) / v;
+                let imaginaryPoint = this.params.room.width + v2 * t2;
+
+                return imaginaryPoint;
+            }
+
+
+            _get_the_point_of_intersection(r1, r2, p1, p2) {
+
+                // Координаты направления вектора синего отрезка
+                let v = r2.X - r1.X;
+                let w = r2.Y - r1.Y;
+
+                // Координаты направления вектора красного отрезка
+                let v2 = p2.X - p1.X;
+                let w2 = p2.Y - p1.Y;
+
+                console.log("point0");
+                // Отрезки должны быть определены
+                if (v == 0 && w == 0 && v2 == 0 && w2 == 0) {
+                    return false;
+                } else if (v == 0 && w == 0){
+                    return false;
+                } else if (v2 == 0 && w2 == 0) {
+                    return false;
+                }
+                console.log("point1");
+
+                // Проверка на пересечение
+                let t2 = (-w * p1.X + w * r1.X + v * p1.Y - v * r1.Y) / (w * v2 - v * w2);
+                let t = (p1.X - r1.X + v2 * t2) / v;
+
+                console.log("point3");
+                console.log(v);
+                console.log(t2,t);
+
+                // Если один из параметров меньше 0 и больше 1, значит пересечения нет.
+                if (t < 0 || t > 1 || t2 < 0 || t2 > 1) {
+                    return false;
+                }
+
+                // Координаты точки пересечения
+                let pCrossX = p1.X + v2 * t2;
+                let pCrossY = p1.Y + w2 * t2;
+                return {x: pCrossX, y: pCrossY}
+
+            }
+
+
+            // _get_the_point_of_intersection(tX1, tY1, tX2, tY2, v2, w2, vw) {
+
+            //     let v = tX2 - tX1;
+            //     let w = tY2 - tY1;
+
+            //     let t2 = (-w * 0 + w * tX1 + v * vw - v * tY1) / (w * v2 - v * w2);
+            //     let imaginaryPoint = this.params.room.length + w2 * t2;
+            //     console.log(imaginaryPoint);
+            //     return imaginaryPoint;
+            // }
+
 
             /**
              *  Получить одну плитку
              */
             get_item_bound(x, y, angle, right, tile_length, tile_width){
-                var point_1 = {"x": x, "y": y};
-                var point_2;
-                var point_3;
-                var point_4;
-                var direction;
-                var whole = {"whole": false};
+                let point_1 = {"x": x, "y": y};
+                let point_2;
+                let point_3;
+                let point_4;
+                let direction;
+                const angle_rad = angle * Math.PI/180;
+                const angle_and_90_rad = (angle + 90) * (Math.PI/180);
+                const r = (tile_length ** 2 + tile_width ** 2) ** 0.5;
+                let whole = {"whole": false};
                 if (right) {
                     point_2 = {
-                        "x": x + tile_length * Math.cos(angle * Math.PI/180),
-                        "y": y + tile_length * Math.sin(angle * Math.PI/180)
+                        "x": Math.round(x + tile_length * Math.cos(angle_rad)),
+                        "y": Math.round(y + tile_length * Math.sin(angle_rad))
                     };
-
-                    let r = (tile_length ** 2 + tile_width ** 2) ** 0.5;
                     let u = (angle + Math.atan(tile_width / tile_length) / (Math.PI/180)) * Math.PI/180;
-
                     point_3 = {
-                        "x": x + r * Math.cos(u),
-                        "y": y + r * Math.sin(u)
+                        "x": Math.round(x + r * Math.cos(u)),
+                        "y": Math.round(y + r * Math.sin(u))
                     };
                     point_4 = {
-                        "x": x + tile_width * Math.cos((angle + 90) * (Math.PI/180)),
-                        "y": y + tile_width * Math.sin((angle + 90) * (Math.PI/180))
+                        "x": Math.round(x + tile_width * Math.cos(angle_and_90_rad)),
+                        "y": Math.round(y + tile_width * Math.sin(angle_and_90_rad))
                     };
                     direction = {"right": true};
                 } else {
                     point_2 = {
-                        "x": x + tile_length * Math.cos((angle + 90) * Math.PI/180),
-                        "y": y + tile_length * Math.sin((angle + 90) * Math.PI/180)
+                        "x": Math.round(x + tile_length * Math.cos(angle_and_90_rad)),
+                        "y": Math.round(y + tile_length * Math.sin(angle_and_90_rad))
                     };
-
+                    let u = (angle + (90 - Math.atan(tile_width / tile_length) / (Math.PI/180))) * Math.PI/180;
                     point_3 = {
-                        "x": x + (tile_length ** 2 + tile_width ** 2) ** 0.5 * Math.cos(
-                            (angle + (90 - Math.atan(tile_width / tile_length) / (Math.PI/180))) * Math.PI/180),
-                        "y": y + (tile_length ** 2 + tile_width ** 2) ** 0.5 * Math.sin(
-                            (angle + (90 - Math.atan(tile_width / tile_length) / (Math.PI/180))) * Math.PI/180)
+                        "x": Math.round(x + r * Math.cos(u)),
+                        "y": Math.round(y + r * Math.sin(u))
                     };
                     point_4 = {
-                        "x": x + tile_width * Math.cos(angle * (Math.PI/180)),
-                        "y": y + tile_width * Math.sin(angle * (Math.PI/180))
+                        "x": Math.round(x + tile_width * Math.cos(angle_rad)),
+                        "y": Math.round(y + tile_width * Math.sin(angle_rad))
                     };
                     direction = {"right": false};
                 }
@@ -304,17 +448,21 @@
              *  поулчаем массив всех эелментов
              */
             getItems() {
-                var result = document.getElementById("room_svg");
-                var items = [];
-                var right = true;
-                var x = this.startTiling.x;
-                var y = this.startTiling.y;
-                var angle = this.params.angle;
-                var tileLength = this.params.tile.length;
-                var tileWidth = this.params.tile.width;
-                var changeDirection = false;
+                let result = document.getElementById("room_svg");
+                let items = [];
+                let right = true;
+                let x = this.startTiling.x;
+                let y = this.startTiling.y;
+                let angle = this.params.angle;
+                let tileLength = this.params.tile.length;
+                let tileWidth = this.params.tile.width;
+                let changeDirection = false;
+                let firstStartTiling;
+                if (this.params.angle === 0) {
+                    firstStartTiling = this.startTiling;
+                }
                 while (true) {
-                    var item = this.get_item_bound(x, y, angle, right, tileLength, tileWidth)
+                    let item = this.get_item_bound(x, y, angle, right, tileLength, tileWidth)
                     right = !right;
                     x = item[3]["x"];
                     y = item[3]["y"];
@@ -324,7 +472,7 @@
                         x = this.startTiling.x;
                         y = this.startTiling.y;
                         if (!this.continueLaying(x, y) && !changeDirection && this.params.angle === 0) {
-                            this.startTiling = this.changeStartTiling(angle + 45);
+                            this.startTiling = firstStartTiling;
                             changeDirection = true;
                         };
                         if (!this.continueLaying(x, y) && !changeDirection) {
@@ -335,16 +483,38 @@
                         }
                     };
 
-                    if (!this.remove_redundant_items(item)) {
-                        continue;
-                    };
-
                     if (this.get_whole_tile(item)) {
+                        // если плитка целиком внутри
                         item[5] = {"whole": true};
+                    } else {
+                        console.log("cuurent="+this.items.length);
+                        let isInside = this.remove_redundant_items(item)
+
+                        if (!isInside) {
+                            console.log("broken");
+                            item[5] = {"broken": true};
+                        } 
                     }
 
                     this.items.push(item);
                 };
+            }
+
+            /**
+             *  Перетаскивание плашек
+             */
+            dragAndDrop(e) {
+                if (e.which === 1) {
+                    let x = e.pageX - this.downX - this.params.room.width;
+                    let y = e.pageY - this.downY - this.params.room.length;
+                    this.startTiling = {x: x, y: y};
+                    if (x<0 && y<0) {
+                        this.handle()
+                    }
+                } else {
+                    this.downX = e.pageX;
+                    this.downY = e.pageY;
+                }
             }
 
             /**
@@ -365,12 +535,20 @@
                     if (item[5]['whole']) {
                         whole = 'whole';
                     };
+                    let right = '';
+                    if (item[4]['right']) {
+                        right = 'right';
+                    };
+                    let broken = '';
+                    if (item[5]['broken']) {
+                        broken = 'broken';
+                    };
                     htmlSvgRect += `<polyline points="\
                         ${item[0]['x']},${item[0]['y']}\
                         ${item[1]['x']},${item[1]['y']}\
                         ${item[2]['x']},${item[2]['y']}\
                         ${item[3]['x']},${item[3]['y']}"\
-                        class="${whole}" stroke="black" />`;
+                        class="${whole} ${right} ${broken}" stroke="black"/><text x="${item[0]['x']}" y="${item[0]['y']}">${i}</text>`;
                 });
 
                 let countItems = this.items.length;
@@ -386,18 +564,32 @@
              *  Основной обработчик
              */
             handle() {
+                // console.time("var-time")
                 this.getParams();
                 this.subtractIndentatWalls();
 
                 if(!this.checkParams()) {
                     return alert(this.errorMessage); // @todo сделать красиво
                 }
+                
+                let p1 = {X: 361, Y: 183};
+                let p2 = {X: 404, Y: 226};
+                let r1 = {X: 384, Y: 0};
+                let r2 = {X: 384, Y: 284};
+                
+                let res = this._get_the_point_of_intersection(r1, r2, p1, p2);
+                
+                console.dir(res);
+                return;
+
+
                 this.items = [];
 
                 this.getItems();
                 this.startTiling = this.changeStartTiling(this.params.angle + 45);
 
                 this.render();
+                // console.timeEnd("var-time")
             }
 
         }
