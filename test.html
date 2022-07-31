@@ -61,8 +61,15 @@
 <!--             <div id="btnCalcGetResult">Рассчитать</div> -->
         </div>
 
-        <div class="draggable" id="calcResultBlock">
+        <div class="blockRoomArrows">
+            <div class="navRoomArrows" id="navRoomArrows" style="display: none;">
+                <a id="arrowTop" class="arrow to-top"></a>
+                <a id="arrowRight" class="arrow to-right"></a>
+                <a id="arrowBottom" class="arrow to-bottom"></a>
+                <a id="arrowLeft" class="arrow to-left"></a>
+            </div>
 
+            <div class="draggable" id="calcResultBlock"></div>
         </div>
     </div>
 
@@ -92,6 +99,8 @@
             startTiling;
             downX;
             downY;
+            moveArrowX = 0;
+            moveArrowY = 0;
 
             /**
              * Конструктор класса
@@ -103,8 +112,19 @@
                 let btnGetResult = document.getElementById("btnCalcGetResult");
                 btnGetResult.addEventListener( "click" , () => this.handle());
 
-                // let drag = document.getElementById("draggable");
-                // drag.addEventListener('mousemove', (e) => this.dragAndDrop(e));
+
+                let arrowTop = document.getElementById("arrowTop");
+                arrowTop.addEventListener( "click" , () => this.moveTop());
+
+                let arrowRight = document.getElementById("arrowRight");
+                arrowRight.addEventListener( "click" , () => this.moveRight());
+
+                let arrowBottom = document.getElementById("arrowBottom");
+                arrowBottom.addEventListener( "click" , () => this.moveBottom());
+
+                let arrowLeft = document.getElementById("arrowLeft");
+                arrowLeft.addEventListener( "click" , () => this.moveLeft());
+
 
                 this.resultBlock = document.getElementById("calcResultBlock");
                 this.resultBlock.addEventListener('mousemove', (e) => this.dragAndDrop(e));
@@ -186,6 +206,30 @@
                 this.params.room.width -=  this.params.indentatWalls*2;
             }
 
+            moveTop() {
+                this.moveArrowY -= 1;
+                this.startTiling.y += this.moveArrowY;
+                this.handle()
+            }
+
+            moveRight() {
+                this.moveArrowX += 1;
+                this.startTiling.x += this.moveArrowX;
+                this.handle()
+            }
+
+            moveLeft() {
+                this.moveArrowX -= 1;
+                this.startTiling.x += this.moveArrowX;
+                this.handle()
+            }
+
+            moveBottom() {
+                this.moveArrowY += 1;
+                this.startTiling.y += this.moveArrowY;
+                this.handle()
+            }
+
             changeStartTiling(angle) {
                 if (angle < 45) {
                     let indent = ((2 ** 0.5) * this.params.tile.length) / 2;
@@ -262,9 +306,6 @@
                 var index, len;
                 for (index = 0, len = sides_of_the_room.length; index < len; ++index){
 
-
-
-
                     let side_room = sides_of_the_room[index]
                     let r1 = {X: side_room.X1, Y: side_room.Y1};
                     let r2 = {X: side_room.X2, Y: side_room.Y2};
@@ -275,21 +316,11 @@
                         let p2 = {X: item[i_tile+increase]["x"], Y: item[i_tile+increase]["y"]};
                         let imaginaryPoints = this._get_the_point_of_intersection(r1, r2, p1, p2);
 
-                        
-                        console.log("index="+index+",tile="+i_tile);
-                        console.log(p1,p2,r1,r2);
-                        console.dir(imaginaryPoints);
-
-                        if (
-                            (imaginaryPoints.x<=this.params.room.width && imaginaryPoints.x>=0) && 
-                            (imaginaryPoints.x>=item[i_tile]["x"] && imaginaryPoints.x<=item[i_tile+increase]["x"])
-                            ) {
+                        if (imaginaryPoints.x<this.params.room.width && imaginaryPoints.x>0) {
                             return true;
                         };
-                        if ((imaginaryPoints.y<=this.params.room.length && imaginaryPoints.y>=0) &&
-                            (imaginaryPoints.y>=item[i_tile]["y"] && imaginaryPoints.y<=item[i_tile+increase]["y"])
 
-                            )  {
+                        if (imaginaryPoints.y<this.params.room.length && imaginaryPoints.y>0) {
                             return true;
                         };
                         // if (imaginaryPoints.y>=item[i_tile]["y"] || imaginaryPoints.y<=item[i_tile+increase]["y"]) {
@@ -297,27 +328,19 @@
                         // };
 
 
-                        /*if (imaginaryPoints.x>this.params.room.width || imaginaryPoints.x<0) {
+                        // if (imaginaryPoints.x>this.params.room.width || imaginaryPoints.x<0) {
 
-                            return;
-                        };
-                        if (imaginaryPoints.y>this.params.room.length || imaginaryPoints.y<0) {
-                            console.log('x', imaginaryPoints.x);
-                            console.log('y', imaginaryPoints.y);
-                            return;
-                        };*/
+                        //     return;
+                        // };
+                        // if (imaginaryPoints.y>this.params.room.length || imaginaryPoints.y<0) {
+                        //     // console.log('x', imaginaryPoints.x);
+                        //     // console.log('y', imaginaryPoints.y);
+                        //     return;
+                        // };
                     }
                 }
 
-
                 return;
-
-                /*if (sides_tile===0) {
-                    console.log(sides_tile)
-                    return;
-                }
-
-                return true;*/
             }
 
             
@@ -335,6 +358,11 @@
 
 
             _get_the_point_of_intersection(r1, r2, p1, p2) {
+                // Принимает точки отрезков
+                // let p1 = {X: 361, Y: 183};
+                // let p2 = {X: 404, Y: 226};
+                // let r1 = {X: 384, Y: 0};
+                // let r2 = {X: 384, Y: 284};
 
                 // Координаты направления вектора синего отрезка
                 let v = r2.X - r1.X;
@@ -344,7 +372,6 @@
                 let v2 = p2.X - p1.X;
                 let w2 = p2.Y - p1.Y;
 
-                console.log("point0");
                 // Отрезки должны быть определены
                 if (v == 0 && w == 0 && v2 == 0 && w2 == 0) {
                     return false;
@@ -353,15 +380,10 @@
                 } else if (v2 == 0 && w2 == 0) {
                     return false;
                 }
-                console.log("point1");
 
                 // Проверка на пересечение
                 let t2 = (-w * p1.X + w * r1.X + v * p1.Y - v * r1.Y) / (w * v2 - v * w2);
                 let t = (p1.X - r1.X + v2 * t2) / v;
-
-                console.log("point3");
-                console.log(v);
-                console.log(t2,t);
 
                 // Если один из параметров меньше 0 и больше 1, значит пересечения нет.
                 if (t < 0 || t > 1 || t2 < 0 || t2 > 1) {
@@ -374,18 +396,6 @@
                 return {x: pCrossX, y: pCrossY}
 
             }
-
-
-            // _get_the_point_of_intersection(tX1, tY1, tX2, tY2, v2, w2, vw) {
-
-            //     let v = tX2 - tX1;
-            //     let w = tY2 - tY1;
-
-            //     let t2 = (-w * 0 + w * tX1 + v * vw - v * tY1) / (w * v2 - v * w2);
-            //     let imaginaryPoint = this.params.room.length + w2 * t2;
-            //     console.log(imaginaryPoint);
-            //     return imaginaryPoint;
-            // }
 
 
             /**
@@ -448,7 +458,6 @@
              *  поулчаем массив всех эелментов
              */
             getItems() {
-                let result = document.getElementById("room_svg");
                 let items = [];
                 let right = true;
                 let x = this.startTiling.x;
@@ -487,12 +496,13 @@
                         // если плитка целиком внутри
                         item[5] = {"whole": true};
                     } else {
-                        console.log("cuurent="+this.items.length);
+                        // console.log("cuurent="+this.items.length);
                         let isInside = this.remove_redundant_items(item)
 
                         if (!isInside) {
-                            console.log("broken");
-                            item[5] = {"broken": true};
+                            // console.log("broken");
+                            // item[5] = {"broken": true};
+                            continue;
                         } 
                     }
 
@@ -525,11 +535,16 @@
                 let lengthRoom = Number(this.params.room.length);
                 let indentatWalls = Number(this.params.indentatWalls);
                 
-                let htmlSvg = `<svg id="room_svg" width="100%" height="100%"  xmlns="http://www.w3.org/2000/svg" viewBox="${widthRoom/-5} ${lengthRoom/-5 } ${widthRoom*1.4 } ${lengthRoom*1.4}">`;
+                let htmlSvg = `
+                <svg id="room_svg" width="100%" height="100%"  xmlns="http://www.w3.org/2000/svg" viewBox="${widthRoom/-10} ${lengthRoom/-10 } ${widthRoom*1.2 } ${lengthRoom*1.2}">`;
                 
-                let htmlSvgRect = `<rect width="${widthRoom}" height="${lengthRoom}" fill="#999"/>\
+                let htmlSvgRect = `
+                <rect width="${widthRoom}" height="${lengthRoom}" fill="#999"/>\
                     <rect x="${-indentatWalls}" y="${-indentatWalls}" width="${widthRoom + indentatWalls*2}" height="${lengthRoom + indentatWalls*2}" stroke="black" fill="none"/>`;
-                
+
+                let countItems = this.items.length;
+                let countRightItems = 0;
+
                 this.items.forEach(function(item, i, arr) {
                     let whole = '';
                     if (item[5]['whole']) {
@@ -538,6 +553,7 @@
                     let right = '';
                     if (item[4]['right']) {
                         right = 'right';
+                        countRightItems += 1;
                     };
                     let broken = '';
                     if (item[5]['broken']) {
@@ -548,15 +564,19 @@
                         ${item[1]['x']},${item[1]['y']}\
                         ${item[2]['x']},${item[2]['y']}\
                         ${item[3]['x']},${item[3]['y']}"\
-                        class="${whole} ${right} ${broken}" stroke="black"/><text x="${item[0]['x']}" y="${item[0]['y']}">${i}</text>`;
+                        class="${whole} ${right} ${broken}" stroke="black"/>`;
                 });
 
-                let countItems = this.items.length;
-                let blockItems = `<div class="calc-result" style="display: block;">\
+                
+                let blockItems = 
+                `<div class="calc-result" style="display: block;">\
                     <div style="text-align:center; font-size:16px;">Требуемое количество плашек ламината: ${countItems}</div>\
+                    <div style="text-align:center; font-size:16px;">Правых плашек: ${countRightItems}</div>
+                    <div style="text-align:center; font-size:16px;">Левых плашек: ${countItems - countRightItems}</div>
                     </div>`;
 
                 this.resultBlock.innerHTML = htmlSvg + htmlSvgRect + '</svg>' + blockItems;
+                navRoomArrows.style.display = ""
             }
 
 
@@ -564,6 +584,7 @@
              *  Основной обработчик
              */
             handle() {
+                console.log(this.startTiling.y)
                 // console.time("var-time")
                 this.getParams();
                 this.subtractIndentatWalls();
@@ -571,23 +592,14 @@
                 if(!this.checkParams()) {
                     return alert(this.errorMessage); // @todo сделать красиво
                 }
-                
-                let p1 = {X: 361, Y: 183};
-                let p2 = {X: 404, Y: 226};
-                let r1 = {X: 384, Y: 0};
-                let r2 = {X: 384, Y: 284};
-                
-                let res = this._get_the_point_of_intersection(r1, r2, p1, p2);
-                
-                console.dir(res);
-                return;
-
 
                 this.items = [];
 
                 this.getItems();
+
                 this.startTiling = this.changeStartTiling(this.params.angle + 45);
 
+                console.log(this.startTiling.y)
                 this.render();
                 // console.timeEnd("var-time")
             }

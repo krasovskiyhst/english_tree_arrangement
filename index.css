@@ -1,11 +1,12 @@
 #calcResultBlock {
-	height: 600px;
-	width: 600px;
+	height: 100%;
+	width: 100%;
+    display: contents;
 
 }
 #calcResultBlock svg {
-	height: 600px;
-	width: 600px;
+	height: 500px;
+	width: 100%;
 }
 #calcResultBlock polyline {
 	fill: #FFDBA4;
@@ -15,7 +16,74 @@
 polyline.whole {
 	fill: #A67A38 !important;
 }
+polyline.right {
+    fill: #000 !important;
+}
+.blockRoomArrows {
+    position: relative;
+    width: 100%;
+}
 
+.navRoomArrows{
+    text-align:center;
+    font-size:180%;
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform:translate(-50%, -50%);
+}
+
+.arrow{
+    color:white;
+    padding-top:1.8em;
+    display:inline-block;
+    position: absolute;
+    border-color:white;
+    text-decoration:none;
+    transition:all .3s ease-out;
+}
+.arrow:before{
+    background:#000;
+    content:'▲';
+    font-size:.9em;
+    position:absolute;
+    top:0;
+    left:50%;
+    margin-left:-.7em;
+    border:solid .13em white;
+    border-radius:10em;
+    width:1.4em;
+    height:1.4em;
+    line-height:1.3em;
+    border-color:inherit;
+    transition:transform .5s ease-in;
+    cursor: pointer;
+}
+.arrow:hover{
+    color:pink;
+    border-color:pink;
+}
+/*.to-top:hover:before{
+    transform: rotate(360deg);
+}*/
+
+.to-top {
+    top: -40px;
+    left: -6px;
+}
+.to-right {
+    transform: rotate(90deg);
+    right: -35px;
+    top: -6px;
+}
+.to-bottom {
+    transform: rotate(180deg);
+    bottom: -80px;
+}
+.to-left {
+    transform: rotate(270deg);
+    right: 40px;
+}
 
 
 .wn-calc {
